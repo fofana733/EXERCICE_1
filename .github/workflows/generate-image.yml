@@ -15,35 +15,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Installer Canvas
-        run: npm install canvas
-      
-      - name: Générer l'image
+      - name: Générer l'image SVG
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
           echo "Message du commit: $COMMIT_MSG"
           mkdir -p image
-          node -e "
-          const { createCanvas } = require('canvas');
-          const fs = require('fs');
-          const canvas = createCanvas(800, 400);
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#1e3a8a';
-          ctx.fillRect(0, 0, 800, 400);
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 60px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(process.env.COMMIT_MSG, 400, 200);
-          const buffer = canvas.toBuffer('image/png');
-          fs.writeFileSync('image/image.png', buffer);
-          "
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          cat > image/image.svg << EOF
+          <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+            <rect width="800" height="400" fill="#1e3a8a"/>
+            <text x="400" y="200" font-family="Arial" font-size="60" fill="white" text-anchor="middle" font-weight="bold">$COMMIT_MSG</text>
+          </svg>
+          EOF
       
       - name: Déployer sur GitHub Pages
         uses: actions/deploy-pages@v4
