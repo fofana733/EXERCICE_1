@@ -1,60 +1,49 @@
 name: Génération Image + Déploiement Pages
+
 on:
   push:
-    branches: [ main ]
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+    branches: [ "main" ]
 
 jobs:
-  generate-and-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     steps:
-      - name: Cloner le dépôt
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Créer le dossier images
-        run: mkdir -p images
-
-      - name: Récupérer message du commit
-        id: commit
-        run: |
-          echo "MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
-          echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Générer l'image via DynaPictures
-        id: dynapic
-        run: |
-          RESPONSE=$(curl -s -X POST "https://api.dynapictures.com/design/generate" \
-          -H "Authorization: Bearer ${{ secrets.DYNAPICTURES_API_KEY }}" \
-          -H "Content-Type: application/json" \
-          -d "$(jq -n --arg text "${{ steps.commit.outputs.MESSAGE }}" '{template_id: "default", text: $text}')")
-          echo "URL=$(echo $RESPONSE | jq -r .url)" >> $GITHUB_OUTPUT
-
-      - name: Télécharger l'image
-        run: |
-          curl -o images/${{ steps.commit.outputs.SHA }}.png "${{ steps.dynapic.outputs.URL }}"
-
-      - name: Générer index.html
-        run: |
-          mkdir -p public
-          echo '<!DOCTYPE html><html><head><title>Galerie</title><style>body{font-family:Arial;text-align:center} img{margin:10px;border-radius:8px}</style></head><body><h1>Ma Galerie IA - EXERCICE_1</h1>' > public/index.html
-          for img in images/*.png; do
-            echo "<div><p>Image: $img</p><img src=\"../$img\" width=\"300\"></div>" >> public/index.html
-          done
-          echo '</body></html>' >> public/index.html
-
-      - name: Committer l'image
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add images/
-          git commit -m "Add image for commit ${{ steps.commit.outputs.SHA }}" || echo "No changes"
-          git push
-      - name: Déployer sur GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          node-version: '20'
+      
+      - name: Installer Canvas
+        run: npm install canvas
+      
+      - name: Générer l'image
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Message du commit: $COMMIT_MSG"
+          mkdir -p image
+          node -e "
+          const { createCanvas } = require('canvas');
+          const fs = require('fs');
+          const canvas = createCanvas(800, 400);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#1e3a8a';
+          ctx.fillRect(0, 0, 800, 400);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 60px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(process.env.COMMIT_MSG, 400, 200);
+          const buffer = canvas.toBuffer('image/png');
+          fs.writeFileSync('image/image.png', buffer);
+          "
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+      
+      - name: Déployer sur GitHub Pages
+        uses: actions/deploy-pages@v4
