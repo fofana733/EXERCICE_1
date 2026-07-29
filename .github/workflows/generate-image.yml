@@ -1,41 +1,33 @@
-name: Génération Image + Déploiement Pages
+name: Generate SVG Image
 
 on:
   push:
-    branches: [ "main" ]
-    paths-ignore:  # <-- IMPORTANT : ignore les commits de l'Action
+    paths-ignore:
       - 'image/**'
 
 jobs:
-  build:
+  generate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # <-- pour avoir l'historique des commits
-      
-      - name: Récupérer le message du commit
-        id: commit
-        run: echo "msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
-      
-      - name: Créer l'image SVG
+
+      - name: Read test.txt
+        id: read
+        run: echo "content=$(cat test.txt)" >> $GITHUB_OUTPUT
+
+      - name: Create SVG
         run: |
-          MSG="${{ steps.commit.outputs.msg }}"
           mkdir -p image
-          cat > image/image.svg << EOL
-          <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
-            <rect width="800" height="400" fill="#2563eb"/>
-            <text x="400" y="200" font-family="Arial" font-size="50" fill="white" text-anchor="middle" font-weight="bold">$MSG</text>
-          </svg>
-          EOL
-      
-      - name: Commit l'image
+          echo '<svg width="800" height="200" xmlns="http://www.w3.org/2000/svg">' > image/image.svg
+          echo '<rect width="800" height="200" fill="#2563eb"/>' >> image/image.svg
+          echo '<text x="400" y="100" font-family="Arial" font-size="28" fill="white" text-anchor="middle" dominant-baseline="middle">${{ steps.read.outputs.content }}</text>' >> image/image.svg
+          echo '</svg>' >> image/image.svg
+
+      - name: Commit image
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --global user.name 'actions-user'
+          git config --global user.email 'actions@github.com'
           git add image/image.svg
-          git diff --staged --quiet || git commit -m "Auto: Génère image pour [${{ steps.commit.outputs.msg }}]"
+          git commit -m "Auto: Génère image pour [${{ steps.read.outputs.content }}]" || exit 0
           git push
