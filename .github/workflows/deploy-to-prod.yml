@@ -1,4 +1,6 @@
-workflow_dispatch:
+name: Déploiement FTP vers InfinityFree
+on:
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -20,4 +22,3 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: /htdocs/
-          workflow FTP
