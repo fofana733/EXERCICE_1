@@ -1,0 +1,77 @@
+[19:24, 29/07/2026] 🥰EN ALLAH NOUS CROYONS 🥰: name: Génération Image + Déploiement Pages
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:  # <-- IMPORTANT : ignore les commits de l'Action
+      - 'image/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # <-- pour avoir l'historique des commits
+      
+      - name: Récupérer le message du commit
+        id: commit
+        run: echo "msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+      
+      - name: Créer l'image SVG
+        run: |
+          MSG="${{ steps.commit.outputs.msg }}"
+          mkdir -p image
+          cat > image/image.svg << EOL
+          <svg width="800" height="400" xmlns="http://www.w3.or…
+[19:39, 29/07/2026] 🥰EN ALLAH NOUS CROYONS 🥰: <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 1 - Fofana</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        img {
+            max-width: 100%;
+            border-radius: 10px;
+            border: 3px solid white;
+        }
+        p {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Mon Exercice GitHub Actions</h1>
+        <img src="image/image.svg" alt="Image générée par Action">
+        <p>L'image ci-dessus est générée automatiquement à chaque commit</p>
+    </div>
+</body>
+</html>
