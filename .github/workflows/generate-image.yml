@@ -5,27 +5,29 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Générer l'image SVG
+      - name: Créer l'image SVG
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          echo "Message du commit: $COMMIT_MSG"
+          MSG="${{ github.event.head_commit.message }}"
           mkdir -p image
-          cat > image/image.svg << EOF
+          cat > image/image.svg << EOL
           <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
-            <rect width="800" height="400" fill="#1e3a8a"/>
-            <text x="400" y="200" font-family="Arial" font-size="60" fill="white" text-anchor="middle" font-weight="bold">$COMMIT_MSG</text>
+            <rect width="800" height="400" fill="#2563eb"/>
+            <text x="400" y="200" font-family="Arial" font-size="50" fill="white" text-anchor="middle" font-weight="bold">$MSG</text>
           </svg>
-          EOF
+          EOL
       
-      - name: Déployer sur GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Commit l'image
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add image/image.svg
+          git diff --staged --quiet || git commit -m "Auto: Génère image pour [$MSG]"
+          git push
