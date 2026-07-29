@@ -3,6 +3,8 @@ name: Génération Image + Déploiement Pages
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:  # <-- IMPORTANT : ignore les commits de l'Action
+      - 'image/**'
 
 jobs:
   build:
@@ -12,10 +14,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # <-- pour avoir l'historique des commits
+      
+      - name: Récupérer le message du commit
+        id: commit
+        run: echo "msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
       
       - name: Créer l'image SVG
         run: |
-          MSG="${{ github.event.head_commit.message }}"
+          MSG="${{ steps.commit.outputs.msg }}"
           mkdir -p image
           cat > image/image.svg << EOL
           <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
@@ -29,5 +37,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add image/image.svg
-          git diff --staged --quiet || git commit -m "Auto: Génère image pour [$MSG]"
+          git diff --staged --quiet || git commit -m "Auto: Génère image pour [${{ steps.commit.outputs.msg }}]"
           git push
