@@ -1,0 +1,40 @@
+name: Notification Discord Image
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'image/**'  # <- se déclenche seulement si un fichier dans /image/ change
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le repo
+        uses: actions/checkout@v4
+
+      - name: Récupérer message du dernier commit
+        id: commit
+        run: echo "MSG=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+
+      - name: Récupérer le nom du fichier image ajouté/modifié
+        id: image
+        run: |
+          # Prend le dernier fichier modifié dans le dossier image/
+          NOM_FICHIER=$(git diff --name-only HEAD~1 HEAD | grep 'image/' | head -n 1 | xargs basename)
+          echo "NOM=$NOM_FICHIER" >> $GITHUB_OUTPUT
+
+      - name: Construire l'URL dynamique de l'image
+        id: url
+        run: |
+          URL="https://fofana733.github.io/EXERCICE_1/${{ steps.image.outputs.NOM }}"
+          echo "IMAGE_URL=$URL" >> $GITHUB_OUTPUT
+
+      - name: Envoyer la notification Discord
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"embeds\": [{\"title\": \"🚀 Nouvelle image générée !\", \"description\": \"*Commit:* ${{ steps.commit.outputs.MSG }}\", \"image\": {\"url\": \"${{ steps.url.outputs.IMAGE_URL }}\"}, \"url\": \"${{ steps.url.outputs.IMAGE_URL }}\"}]}" \
+          ${{ secrets.DISCORD_WEBHOOK }}
