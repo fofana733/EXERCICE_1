@@ -1,3 +1,3 @@
 # EXERCICE_1
 Exercice Devops
-# test notif discord
+# test 2 discord
