@@ -1,0 +1,12 @@
+name: Discord Notification
+    on: [push]
+    
+    jobs:
+      notify:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Send Discord notification
+            run: |
+              curl -H "Content-Type: application/json" \
+              -d '{"content": "Nouveau push sur EXERCICE_1 par ${{ github.actor }} - Commit: ${{ github.event.head_commit.message }}"}' \
+              ${{ secrets.DISCORD_WEBHOOK }}
